@@ -9,6 +9,6 @@
     "128": "icon/128.png"
   },
 
-  "permissions": ["activeTab"],
+  "permissions": [],
   "devtools_page": "src/devtools.html"
 }
