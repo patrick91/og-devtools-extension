@@ -3,15 +3,18 @@ import React, { useState, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 import browser from "webextension-polyfill";
 
+type OGData = Record<string, string>;
+type EvalResponse = OGData | [OGData | undefined, { description?: string } | undefined];
+
 const OGTagViewer = () => {
-  const [ogData, setOgData] = useState<{ [key: string]: string }>({});
+  const [ogData, setOgData] = useState<OGData>({});
 
   useEffect(() => {
     let navigationTimeout: number | null = null;
 
     const fetchOGTags = async () => {
       try {
-        const [result, exceptionInfo] = await browser.devtools.inspectedWindow.eval(`
+        const response = (await browser.devtools.inspectedWindow.eval(`
           (function() {
             const ogTags = document.querySelectorAll('meta[property^="og:"]');
             const ogData = {};
@@ -20,7 +23,13 @@ const OGTagViewer = () => {
             });
             return ogData;
           })()
-        `);
+        `)) as EvalResponse;
+
+        // Chromium's native Promise returns the value directly; Firefox and the
+        // polyfill return [value, exceptionInfo].
+        const [result, exceptionInfo] = Array.isArray(response)
+          ? response
+          : [response, undefined];
 
         // Check if there was an exception (e.g., no execution context)
         if (exceptionInfo) {
